@@ -8,6 +8,7 @@ export enum WineDryness {
 }
 
 export interface WineInfo {
+  id?: string;
   name: string;
   region: string;
   dryness: WineDryness;
@@ -15,6 +16,9 @@ export interface WineInfo {
   pairings: string[];
   grapeType: string;
   alcoholContent: string;
+  servingTemp?: string;
+  classification?: string; // np. DOCG, DOC, IGT
+  timestamp?: number;
 }
 
 export interface ScanResult {

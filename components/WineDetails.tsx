@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { WineInfo, WineDryness } from '../types';
-import { ChevronLeft, Info, GlassWater, Utensils, Droplets, MapPin } from 'lucide-react';
+import { ChevronLeft, Info, GlassWater, Utensils, Droplets, MapPin, Volume2, ThermometerSun, ShieldCheck, Loader2 } from 'lucide-react';
+import { speakSommelierNotes } from '../services/geminiService';
 
 interface WineDetailsProps {
   wine: WineInfo;
@@ -9,119 +10,120 @@ interface WineDetailsProps {
 }
 
 const WineDetails: React.FC<WineDetailsProps> = ({ wine, onClose }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleSpeak = async () => {
+    if (isPlaying) return;
+    setIsPlaying(true);
+    try {
+      await speakSommelierNotes(wine.description);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTimeout(() => setIsPlaying(false), 5000); // Proste zabezpieczenie czasu trwania
+    }
+  };
+
   const getDrynessColor = (dryness: string) => {
     switch (dryness) {
-      case WineDryness.DRY: return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case WineDryness.SEMI_DRY: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case WineDryness.SEMI_SWEET: return 'bg-orange-100 text-orange-800 border-orange-200';
-      case WineDryness.SWEET: return 'bg-rose-100 text-rose-800 border-rose-200';
-      default: return 'bg-stone-100 text-stone-800 border-stone-200';
+      case WineDryness.DRY: return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case WineDryness.SEMI_DRY: return 'bg-yellow-50 text-yellow-700 border-yellow-100';
+      case WineDryness.SEMI_SWEET: return 'bg-orange-50 text-orange-700 border-orange-100';
+      case WineDryness.SWEET: return 'bg-rose-50 text-rose-700 border-rose-100';
+      default: return 'bg-stone-50 text-stone-700 border-stone-100';
     }
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col gap-6">
+    <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 flex flex-col gap-6 pb-20">
       <button 
         onClick={onClose}
-        className="flex items-center gap-2 text-[#722f37] font-semibold text-sm hover:translate-x-[-4px] transition-transform"
+        className="flex items-center gap-2 text-[#722f37] font-semibold text-sm hover:translate-x-[-4px] transition-transform w-fit"
       >
         <ChevronLeft className="w-4 h-4" />
-        Wróć do skanera
+        Powrót do skanera
       </button>
 
-      <div className="bg-white rounded-[2rem] p-8 shadow-xl border border-stone-100 relative overflow-hidden">
-        {/* Background Accent */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#722f37]/5 rounded-bl-[100px] pointer-events-none" />
-
-        <div className="flex flex-col gap-4">
-          <div>
-            <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold border ${getDrynessColor(wine.dryness)} mb-4`}>
-              {wine.dryness.toUpperCase()}
-            </span>
-            <h2 className="text-3xl font-bold text-stone-900 leading-tight mb-2">{wine.name}</h2>
-            <div className="flex items-center gap-1.5 text-stone-500 text-sm font-medium">
-              <MapPin className="w-4 h-4" />
-              {wine.region}, Italia
+      <div className="bg-white rounded-[2.5rem] shadow-2xl border border-stone-100 relative overflow-hidden">
+        {/* Luxury Header Accent */}
+        <div className="h-32 bg-[#4a0e0e] relative">
+          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+          <div className="absolute -bottom-10 left-8">
+            <div className="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center border border-stone-100">
+               <ShieldCheck className="w-10 h-10 text-[#c5a059]" />
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-4 my-4">
-            <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100">
-              <div className="flex items-center gap-2 text-stone-400 mb-1">
-                <GlassWater className="w-4 h-4" />
-                <span className="text-[10px] uppercase font-bold tracking-wider">Odmiana</span>
+        <div className="p-8 pt-14 flex flex-col gap-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getDrynessColor(wine.dryness)}`}>
+                  {wine.dryness}
+                </span>
+                {wine.classification && (
+                  <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#c5a059] bg-[#c5a059]/10 text-[#8a6d3b]">
+                    {wine.classification}
+                  </span>
+                )}
               </div>
-              <p className="text-xs font-semibold text-stone-800">{wine.grapeType}</p>
+              <h2 className="text-3xl font-bold text-stone-900 leading-tight">{wine.name}</h2>
+              <p className="flex items-center gap-1 text-stone-400 text-sm mt-1">
+                <MapPin className="w-3.5 h-3.5" /> {wine.region}, Włochy
+              </p>
             </div>
-            <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100">
-              <div className="flex items-center gap-2 text-stone-400 mb-1">
-                <Droplets className="w-4 h-4" />
-                <span className="text-[10px] uppercase font-bold tracking-wider">Alkohol</span>
-              </div>
-              <p className="text-xs font-semibold text-stone-800">{wine.alcoholContent}</p>
-            </div>
+            
+            <button 
+              onClick={handleSpeak}
+              disabled={isPlaying}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isPlaying ? 'bg-stone-100 text-stone-400' : 'bg-[#722f37] text-white shadow-lg active:scale-90'}`}
+            >
+              {isPlaying ? <Loader2 className="w-6 h-6 animate-spin" /> : <Volume2 className="w-6 h-6" />}
+            </button>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="font-serif italic text-lg text-stone-800 flex items-center gap-2">
-              <Info className="w-5 h-5 text-[#722f37]" />
-              Notatki sommeliera
+          <div className="grid grid-cols-3 gap-3">
+            <DetailCard icon={<GlassWater />} label="Szczep" value={wine.grapeType} />
+            <DetailCard icon={<Droplets />} label="Alkohol" value={wine.alcoholContent} />
+            <DetailCard icon={<ThermometerSun />} label="Temp." value={wine.servingTemp || '16-18°C'} />
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-serif italic text-xl text-stone-800 flex items-center gap-2 border-b border-stone-100 pb-2">
+              <Info className="w-5 h-5 text-[#c5a059]" />
+              Charakterystyka
             </h3>
-            <p className="text-sm text-stone-600 leading-relaxed font-light">
-              {wine.description}
+            <p className="text-sm text-stone-600 leading-relaxed italic">
+              "{wine.description}"
             </p>
           </div>
 
-          <div className="mt-4 pt-6 border-t border-stone-100">
-            <h3 className="font-serif italic text-lg text-stone-800 flex items-center gap-2 mb-4">
-              <Utensils className="w-5 h-5 text-[#722f37]" />
-              Propozycje podania
+          <div className="space-y-4">
+            <h3 className="font-serif italic text-xl text-stone-800 flex items-center gap-2 border-b border-stone-100 pb-2">
+              <Utensils className="w-5 h-5 text-[#c5a059]" />
+              Food Pairing
             </h3>
             <div className="flex flex-wrap gap-2">
-              {wine.pairings.map((pair, idx) => (
-                <span key={idx} className="px-3 py-1.5 bg-stone-100 text-stone-700 text-xs rounded-lg font-medium">
-                  {pair}
+              {wine.pairings.map((p, i) => (
+                <span key={i} className="px-4 py-2 bg-stone-50 text-stone-600 text-[11px] rounded-xl font-semibold border border-stone-100">
+                  {p}
                 </span>
               ))}
             </div>
           </div>
         </div>
       </div>
-
-      <div className="bg-[#722f37] text-white p-6 rounded-[2rem] shadow-lg flex items-center justify-between">
-        <div>
-          <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1">Poziom słodyczy</p>
-          <p className="text-xl font-serif">{wine.dryness}</p>
-        </div>
-        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-          <WineDrynessIcon dryness={wine.dryness} />
-        </div>
-      </div>
     </div>
   );
 };
 
-const WineDrynessIcon: React.FC<{ dryness: string }> = ({ dryness }) => {
-  // Simple representation of sugar level
-  const levels = {
-    [WineDryness.DRY]: 1,
-    [WineDryness.SEMI_DRY]: 2,
-    [WineDryness.SEMI_SWEET]: 3,
-    [WineDryness.SWEET]: 4,
-    default: 0
-  };
-  const level = levels[dryness as keyof typeof levels] || 0;
-  
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4].map((i) => (
-        <div 
-          key={i} 
-          className={`w-2 h-4 rounded-full ${i <= level ? 'bg-white' : 'bg-white/30'}`} 
-        />
-      ))}
-    </div>
-  );
-};
+const DetailCard = ({ icon, label, value }: { icon: any, label: string, value: string }) => (
+  <div className="bg-stone-50/50 p-3 rounded-2xl border border-stone-100 flex flex-col items-center text-center">
+    <div className="text-[#c5a059] mb-1 opacity-80">{icon}</div>
+    <span className="text-[9px] uppercase font-bold text-stone-400 tracking-tighter mb-0.5">{label}</span>
+    <span className="text-[10px] font-bold text-stone-800 truncate w-full">{value}</span>
+  </div>
+);
 
 export default WineDetails;

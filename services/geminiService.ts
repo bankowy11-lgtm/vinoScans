@@ -1,6 +1,6 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { WineDryness, WineInfo } from "../types";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { WineInfo } from "../types";
 
 const API_KEY = process.env.API_KEY || "";
 
@@ -18,9 +18,8 @@ export const identifyWineFromImage = async (base64Image: string): Promise<WineIn
           },
         },
         {
-          text: `Zidentyfikuj to włoskie wino na podstawie etykiety lub kodu kreskowego. 
-          Zwróć szczególną uwagę na poziom słodkości: czy jest wytrawne (secco), półwytrawne (abboccato), półsłodkie (amabile) czy słodkie (dolce).
-          Zwróć dane w formacie JSON.`
+          text: `Zidentyfikuj to włoskie wino. Zwróć dane w formacie JSON. 
+          Dodaj informację o klasyfikacji (DOCG, DOC, IGT), optymalnej temperaturze serwowania oraz rozbuduj opis sommelierski.`
         }
       ]
     },
@@ -29,31 +28,61 @@ export const identifyWineFromImage = async (base64Image: string): Promise<WineIn
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          name: { type: Type.STRING, description: "Pełna nazwa wina" },
-          region: { type: Type.STRING, description: "Region pochodzenia we Włoszech" },
-          dryness: { 
-            type: Type.STRING, 
-            enum: ['Wytrawne', 'Półwytrawne', 'Półsłodkie', 'Słodkie'],
-            description: "Poziom słodkości w języku polskim" 
-          },
-          description: { type: Type.STRING, description: "Krótki opis charakteru wina" },
-          pairings: { 
-            type: Type.ARRAY, 
-            items: { type: Type.STRING },
-            description: "Z czym najlepiej podawać to wino"
-          },
-          grapeType: { type: Type.STRING, description: "Odmiana winogron" },
-          alcoholContent: { type: Type.STRING, description: "Zawartość alkoholu (szacowana jeśli nie widać)" }
+          name: { type: Type.STRING },
+          region: { type: Type.STRING },
+          dryness: { type: Type.STRING, enum: ['Wytrawne', 'Półwytrawne', 'Półsłodkie', 'Słodkie'] },
+          description: { type: Type.STRING },
+          pairings: { type: Type.ARRAY, items: { type: Type.STRING } },
+          grapeType: { type: Type.STRING },
+          alcoholContent: { type: Type.STRING },
+          servingTemp: { type: Type.STRING, description: "Np. 16-18°C" },
+          classification: { type: Type.STRING, description: "Np. DOCG" }
         },
-        required: ["name", "region", "dryness", "description", "pairings", "grapeType", "alcoholContent"]
+        required: ["name", "region", "dryness", "description", "pairings", "grapeType", "alcoholContent", "servingTemp", "classification"]
       }
     }
   });
 
   try {
     const data = JSON.parse(response.text || "{}");
-    return data as WineInfo;
+    return { ...data, timestamp: Date.now(), id: Math.random().toString(36).substr(2, 9) } as WineInfo;
   } catch (error) {
-    throw new Error("Nie udało się przeanalizować zdjęcia. Spróbuj ponownie z wyraźniejszym ujęciem.");
+    throw new Error("Nie udało się przeanalizować zdjęcia. Spróbuj ponownie.");
+  }
+};
+
+export const speakSommelierNotes = async (text: string) => {
+  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-preview-tts",
+    contents: [{ parts: [{ text: `Jesteś profesjonalnym włoskim sommelierem. Przeczytaj te notatki z pasją i elegancją: ${text}` }] }],
+    config: {
+      responseModalities: [Modality.AUDIO],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: { voiceName: 'Kore' },
+        },
+      },
+    },
+  });
+
+  const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+  if (base64Audio) {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    const arrayBuffer = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0)).buffer;
+    
+    // Proste dekodowanie PCM dla TTS Gemini
+    const dataInt16 = new Int16Array(arrayBuffer);
+    const audioBuffer = audioContext.createBuffer(1, dataInt16.length, 24000);
+    const channelData = audioBuffer.getChannelData(0);
+    for (let i = 0; i < dataInt16.length; i++) {
+      channelData[i] = dataInt16[i] / 32768.0;
+    }
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+    source.start();
+    return audioContext;
   }
 };
