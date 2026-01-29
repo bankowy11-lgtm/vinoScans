@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { WineInfo, WineDryness } from '../types';
+import { WineInfo, WineDryness } from '../types.ts';
 import { ChevronLeft, Info, GlassWater, Utensils, Droplets, MapPin, Volume2, ThermometerSun, ShieldCheck, Loader2 } from 'lucide-react';
-import { speakSommelierNotes } from '../services/geminiService';
+import { speakSommelierNotes } from '../services/geminiService.ts';
 
 interface WineDetailsProps {
   wine: WineInfo;

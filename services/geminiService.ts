@@ -1,11 +1,11 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import { WineInfo } from "../types";
+import { WineInfo } from "../types.ts";
 
 // Bezpieczny dostęp do klucza API
 const getApiKey = () => {
   try {
-    return process?.env?.API_KEY || "";
+    return (window as any).process?.env?.API_KEY || "";
   } catch (e) {
     return "";
   }
@@ -52,7 +52,8 @@ export const identifyWineFromImage = async (base64Image: string): Promise<WineIn
   });
 
   try {
-    const data = JSON.parse(response.text || "{}");
+    const text = response.text || "{}";
+    const data = JSON.parse(text);
     return { ...data, timestamp: Date.now(), id: Math.random().toString(36).substr(2, 9) } as WineInfo;
   } catch (error) {
     throw new Error("Nie udało się przeanalizować zdjęcia. Spróbuj ponownie.");

@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import Layout from './components/Layout';
-import Scanner from './components/Scanner';
-import WineDetails from './components/WineDetails';
-import { identifyWineFromImage } from './services/geminiService';
-import { WineInfo } from './types';
+import Layout from './components/Layout.tsx';
+import Scanner from './components/Scanner.tsx';
+import WineDetails from './components/WineDetails.tsx';
+import { identifyWineFromImage } from './services/geminiService.ts';
+import { WineInfo } from './types.ts';
 import { AlertCircle, History, Trash2, Clock } from 'lucide-react';
 
 const App: React.FC = () => {
