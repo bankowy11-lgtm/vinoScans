@@ -1,0 +1,7 @@
+{
+  "name": "VinoScans Italia",
+  "description": "Profesjonalny skaner win włoskich. Dowiedz się, czy Twoje ulubione wino jest wytrawne, półwytrawne, półsłodkie czy słodkie, skanując jego etykietę lub kod kreskowy.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
