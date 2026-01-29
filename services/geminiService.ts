@@ -2,10 +2,18 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { WineInfo } from "../types";
 
-const API_KEY = process.env.API_KEY || "";
+// Bezpieczny dostęp do klucza API
+const getApiKey = () => {
+  try {
+    return process?.env?.API_KEY || "";
+  } catch (e) {
+    return "";
+  }
+};
 
 export const identifyWineFromImage = async (base64Image: string): Promise<WineInfo> => {
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const apiKey = getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
   
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -52,7 +60,8 @@ export const identifyWineFromImage = async (base64Image: string): Promise<WineIn
 };
 
 export const speakSommelierNotes = async (text: string) => {
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const apiKey = getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-preview-tts",
     contents: [{ parts: [{ text: `Jesteś profesjonalnym włoskim sommelierem. Przeczytaj te notatki z pasją i elegancją: ${text}` }] }],
@@ -71,7 +80,6 @@ export const speakSommelierNotes = async (text: string) => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     const arrayBuffer = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0)).buffer;
     
-    // Proste dekodowanie PCM dla TTS Gemini
     const dataInt16 = new Int16Array(arrayBuffer);
     const audioBuffer = audioContext.createBuffer(1, dataInt16.length, 24000);
     const channelData = audioBuffer.getChannelData(0);
